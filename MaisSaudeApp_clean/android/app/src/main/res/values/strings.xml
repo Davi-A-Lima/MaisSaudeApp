@@ -1,0 +1,4 @@
+<resources>
+  <string name="app_name">MaisSaudeApp</string>
+  <string name="expo_updates_check_on_launch">ALWAYS</string>
+</resources>
