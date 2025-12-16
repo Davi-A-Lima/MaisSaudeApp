@@ -1,11 +1,13 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { COLORS, SIZES } from '../../constants/theme';
 import IMAGES from '../../constants/images';
 import * as VectorIcons from '@expo/vector-icons';
+import { fetchWorkouts } from '../../services/firestore';
+import { useNavigation } from '@react-navigation/native';
 
-const CategoryCard = ({ title, icon = 'dumbbell', color = COLORS.primary, size = 'small' }) => (
-  <TouchableOpacity style={[styles.card, size === 'large' ? styles.cardLarge : styles.cardSmall]}>
+const CategoryCard = ({ title, icon = 'dumbbell', color = COLORS.primary, size = 'small', onPress }) => (
+  <TouchableOpacity style={[styles.card, size === 'large' ? styles.cardLarge : styles.cardSmall]} onPress={onPress}>
     <View style={[styles.iconBox, { backgroundColor: color }]}> 
       <VectorIcons.MaterialCommunityIcons name={icon} size={40} color="white" />
     </View>
@@ -14,30 +16,63 @@ const CategoryCard = ({ title, icon = 'dumbbell', color = COLORS.primary, size =
 );
 
 export default function WorkoutsScreen() {
+  const [workouts, setWorkouts] = useState([]);
+  const nav = useNavigation();
+
+  useEffect(() => {
+    let mounted = true;
+    fetchWorkouts().then(items => { if (mounted) setWorkouts(items); }).catch(() => {});
+    return () => { mounted = false; };
+  }, []);
+
+  const renderRecent = ({ item }) => (
+    <View style={styles.recentCard}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <VectorIcons.MaterialCommunityIcons name="run" size={28} color={COLORS.primary} />
+        <View style={{ marginLeft: 12 }}>
+          <Text style={{ fontWeight: 'bold' }}>{item.type || 'Treino'}</Text>
+          <Text style={{ color: COLORS.textSecondary }}>{(item.duration ? Math.round(item.duration) + 's' : '')}</Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  const categories = [
+    { id: 'corrida', title: 'Corrida', icon: 'run', color: '#FF7043', type: 'Corrida' },
+    { id: 'caminhada', title: 'Caminhada', icon: 'walk', color: '#29B6F6', type: 'Caminhada' },
+    { id: 'forca', title: 'Força', icon: 'dumbbell', color: '#66BB6A', type: 'Força' },
+  ];
+
+  const renderCategory = ({ item }) => (
+    <CategoryCard title={item.title} icon={item.icon} color={item.color} onPress={() => nav.navigate('WorkoutTracker', { type: item.type })} />
+  );
+
+  const ListHeader = () => (
+    <View>
+      <Text style={styles.header}>Boa forma</Text>
+      <Text style={styles.sectionTitle}>Iniciar treino</Text>
+      <FlatList
+        data={categories}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={c => c.id}
+        renderItem={renderCategory}
+        contentContainerStyle={styles.horizontalScroll}
+      />
+      <Text style={styles.sectionTitle}>Atividades recentes</Text>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Boa forma</Text>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.sectionTitle}>Mente vazia</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-          <CategoryCard title="Meditação" icon="spa" color="#8E24AA" />
-          <CategoryCard title="Histórias" icon="book-open-variant" color="#3949AB" />
-          <CategoryCard title="Relax" icon="beach" color="#29B6F6" />
-        </ScrollView>
-
-        <Text style={styles.sectionTitle}>Perda de peso</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-          <CategoryCard title="Aeróbico" icon="run" color="#FF7043" />
-          <CategoryCard title="Kickboxing" icon="boxing-glove" color="#FF5252" />
-          <CategoryCard title="Postura" icon="yoga" color="#66BB6A" />
-        </ScrollView>
-
-        <Text style={styles.sectionTitle}>Corrida</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-          <CategoryCard title="5km" icon="walk" color="#FFA726" />
-          <CategoryCard title="10km" icon="run" color="#FB8C00" />
-        </ScrollView>
-      </ScrollView>
+      <FlatList
+        data={workouts}
+        keyExtractor={w => w.id}
+        renderItem={renderRecent}
+        ListHeaderComponent={ListHeader}
+        contentContainerStyle={styles.scroll}
+        ListEmptyComponent={<Text style={{ textAlign: 'center', color: '#777', marginTop: 20 }}>Nenhum treino registrado.</Text>}
+      />
     </View>
   );
 }

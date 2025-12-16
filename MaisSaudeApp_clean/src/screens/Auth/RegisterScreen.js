@@ -9,16 +9,25 @@ export default function RegisterScreen({ navigation }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const { signUp } = useAuth();
 
     const handleRegister = async () => {
+        setError('');
+        if (!email || !password) {
+            setError('Preencha email e senha');
+            return;
+        }
+        setLoading(true);
         try {
             const userCred = await signUp(email, password);
             const uid = userCred.user.uid;
-            await createUserProfile(uid, { email, name: '', createdAt: new Date() });
+            await createUserProfile(uid, { email, name: '', });
             navigation.replace('MainApp');
         } catch (e) {
-            setError('Erro ao cadastrar. Verifique os dados e tente novamente.');
+            setError(e?.message || 'Erro ao cadastrar. Verifique os dados e tente novamente.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -45,5 +54,23 @@ export default function RegisterScreen({ navigation }) {
 
                     {error ? <Text style={{color: 'red', marginBottom: 8}}>{error}</Text> : null}
 
-                    <TouchableOpacity style={styles.button} onPress={handleRegister}>
-                        <Text style={styles.buttonText}>Cadastre-se</Text>
+                    <TouchableOpacity style={[styles.button, loading ? { opacity: 0.7 } : null]} onPress={handleRegister} disabled={loading}>
+                        <Text style={styles.buttonText}>{loading ? 'Aguarde...' : 'Cadastre-se'}</Text>
+                    </TouchableOpacity>
+                </View>
+            </ScrollView>
+        </SafeAreaView>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: COLORS.white },
+    header: { padding: SIZES.padding },
+    scrollContent: { paddingHorizontal: SIZES.padding },
+    welcomeBox: { borderWidth: 1, borderColor: '#ccc', borderRadius: SIZES.radius, padding: 20, marginBottom: 30, alignItems: 'center', backgroundColor: '#fff', elevation: 2 },
+    welcomeTitle: { fontSize: 18, color: COLORS.primary, fontWeight: 'bold', marginBottom: 5 },
+    welcomeSub: { textAlign: 'center', color: COLORS.textSecondary },
+    input: { backgroundColor: '#E0E0E0', padding: 15, borderRadius: 8, marginBottom: 15, fontSize: 16 },
+    button: { backgroundColor: COLORS.primary, padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 10 },
+    buttonText: { color: COLORS.white, fontWeight: 'bold', fontSize: 18 }
+});

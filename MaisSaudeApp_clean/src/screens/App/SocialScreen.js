@@ -1,50 +1,46 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList } from 'react-native';
 import { COLORS, SIZES } from '../../constants/theme';
 import IMAGES from '../../constants/images';
 import * as VectorIcons from '@expo/vector-icons';
+import { fetchPosts } from '../../services/firestore';
+import { useNavigation } from '@react-navigation/native';
 
 export default function SocialScreen() {
+    const [posts, setPosts] = useState([]);
+    const nav = useNavigation();
+
+    useEffect(() => {
+        let mounted = true;
+        fetchPosts().then(items => { if (mounted) setPosts(items); }).catch(() => {});
+        return () => { mounted = false; };
+    }, []);
+
+    const renderItem = ({ item }) => (
+        <View style={styles.postCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Image source={IMAGES.avatar} style={styles.avatarSmall} />
+                <View style={{ marginLeft: 10 }}>
+                    <Text style={{ fontWeight: 'bold' }}>{item.userName || 'Usuário'}</Text>
+                    <Text style={{ color: COLORS.textSecondary, fontSize: 12 }}>{new Date((item.createdAt && item.createdAt.seconds ? item.createdAt.seconds * 1000 : Date.now())).toLocaleString()}</Text>
+                </View>
+            </View>
+            <Text style={{ marginTop: 10 }}>{item.text}</Text>
+            {item.imageUrl ? <Image source={{ uri: item.imageUrl }} style={styles.postImage} /> : null}
+        </View>
+    );
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>Juntos</Text>
-                <View style={styles.userInfo}>
-                    <Image source={IMAGES.avatar} style={styles.avatar} />
-                    <View>
-                        <Text style={{ fontWeight: 'bold' }}>Novato</Text>
-                        <Text>Nív. 1</Text>
-                    </View>
-                    <View style={styles.divider} />
-                    <View>
-                        <Text style={{ fontWeight: 'bold', textAlign: 'center' }}>Amigos</Text>
-                        <Text style={{ textAlign: 'center' }}>0</Text>
-                    </View>
-                </View>
             </View>
 
-            <TouchableOpacity style={styles.createBtn}>
-                <Text style={styles.createBtnText}>Criar desafio</Text>
+            <TouchableOpacity style={styles.createBtn} onPress={() => nav.navigate('CreatePost')}>
+                <Text style={styles.createBtnText}>Criar publicação</Text>
             </TouchableOpacity>
 
-            <View style={styles.challengeCard}>
-                <View>
-                    <Text style={styles.challengeTitle}>Neve, dezembro</Text>
-                    <Text style={styles.challengeSub}>Participem e fiquem em forma juntos.</Text>
-
-                    <View style={{ marginTop: 20 }}>
-                        <Text style={styles.partLabel}>Participantes</Text>
-                        <Text style={styles.partCount}>1.011.841</Text>
-                    </View>
-
-                    <TouchableOpacity style={styles.enterBtn}>
-                        <Text style={{ fontWeight: 'bold' }}>Entrar</Text>
-                    </TouchableOpacity>
-                </View>
-                <View style={[styles.challengeImg, { justifyContent: 'center', alignItems: 'center' }]}>
-                    <VectorIcons.MaterialCommunityIcons name="trophy" size={48} color={COLORS.primary} />
-                </View>
-            </View>
+            <FlatList data={posts} keyExtractor={p => p.id} renderItem={renderItem} contentContainerStyle={{ padding: SIZES.padding }} />
         </View>
     );
 }

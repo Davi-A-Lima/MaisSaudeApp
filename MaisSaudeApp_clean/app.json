@@ -26,5 +26,11 @@
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     }
+    ,
+    "splash": {
+      "image": "./assets/images/mais_saude_logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    }
   }
 }

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { COLORS, SIZES } from '../../constants/theme';
 import IMAGES from '../../constants/images';
+import { auth } from '@/firebase/config';
 import * as VectorIcons from '@expo/vector-icons';
 
 const InfoCard = ({ icon, title, value, meta, color }) => (
@@ -36,9 +37,10 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      // try to get current user from auth
       try {
-        const u = await getUserProfile((await import('@/firebase/config')).auth.currentUser?.uid);
+        const uid = auth.currentUser?.uid;
+        if (!uid) return;
+        const u = await getUserProfile(uid);
         if (mounted) setProfile(u);
       } catch (e) {
         // ignore
@@ -58,12 +60,18 @@ export default function HomeScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={{paddingBottom: 100, paddingHorizontal: SIZES.padding}}>
         <View style={styles.profileSummary}>
-           <Image source={IMAGES.avatar} style={styles.avatar} />
-          <View style={{marginLeft: 15, flex: 1}}>
-             <Text style={{fontWeight: 'bold', fontSize: 16}}>Bob Esponja</Text>
-             <Text style={{color: COLORS.textSecondary}}>25 anos</Text>
-             <Text style={{color: COLORS.danger, fontWeight: 'bold', fontSize: 12}}>Data Nascimento: 15/01/2000</Text>
-          </View>
+             {profile?.avatar ? (
+               <Image source={{ uri: profile.avatar }} style={styles.avatar} />
+             ) : (
+               <View style={[styles.avatar, { justifyContent: 'center', alignItems: 'center' }]}>
+                 <VectorIcons.MaterialCommunityIcons name="account" size={28} color={COLORS.textSecondary} />
+               </View>
+             )}
+           <View style={{marginLeft: 15, flex: 1}}>
+             <Text style={{fontWeight: 'bold', fontSize: 16}}>{profile?.name || auth.currentUser?.email?.split('@')[0] || 'Usuário'}</Text>
+             {profile?.age ? <Text style={{color: COLORS.textSecondary}}>{profile.age + ' anos'}</Text> : null}
+             {profile?.birthDate ? <Text style={{color: COLORS.danger, fontWeight: 'bold', fontSize: 12}}>Data Nascimento: {profile.birthDate}</Text> : null}
+           </View>
            <VectorIcons.MaterialCommunityIcons name="heart-pulse" size={50} color="#4DB6AC"/>
         </View>
 
@@ -93,4 +101,10 @@ const styles = StyleSheet.create({
   avatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#eee' },
   activitiesRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25 },
   activityBtn: { alignItems: 'center', flex: 1 },
-  iconCircle: { width: 50, height: 50, backgroundColor: COLO
+  iconCircle: { width: 50, height: 50, backgroundColor: COLORS.white, borderRadius: 25, justifyContent: 'center', alignItems: 'center', elevation: 2, marginBottom: 5 },
+  activityText: { fontSize: 12, fontWeight: '600', color: COLORS.textPrimary },
+  statsContainer: { gap: 15 },
+  card: { backgroundColor: COLORS.white, padding: 20, borderRadius: SIZES.radius, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', elevation: 2 },
+  cardValue: { fontSize: 20, fontWeight: 'bold', marginLeft: 10 },
+  cardMeta: { color: COLORS.textSecondary, fontSize: 12, marginLeft: 10 },
+});
